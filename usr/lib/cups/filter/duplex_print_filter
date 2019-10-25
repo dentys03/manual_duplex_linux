@@ -1,0 +1,17 @@
+#! /bin/sh
+#log to /var/log/cups/error_log
+set -x
+
+# Command line arguments
+job="$1"
+user="$2"
+title="$3"
+numcopies="$4"
+options="$5"
+filename="$6"
+cp -praf $filename "/var/spool/cups/duplex/$job.duplex"
+
+# Pass file through
+cat "$filename"
+
+exit 0

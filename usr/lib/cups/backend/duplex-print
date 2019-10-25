@@ -1,0 +1,70 @@
+#!/bin/bash
+#Uncomment this to log to /var/log/cups/error_log
+#set -x
+
+# Output "Device Discovery" information on stdout:
+if test "$#" = "0"
+then
+  echo 'direct duplex-print "Unknown" "(!) Manual_duplexer unit for linux. (!)"'
+  exit 0
+fi
+
+#GET PRINTER AND USER FROM URI
+#clip spaces
+URI=${DEVICE_URI%% *}
+# Extract the printer from the uri to which the job schould be sent from the URI.
+# Clip the URI scheme (anything up to the first ':' character) and
+# clip anything after the first '?' character
+USE_PRINTER=${URI#*:}
+USE_PRINTER=${USE_PRINTER%%\?*}
+
+# Command line arguments
+job="$1"
+user="$2"
+title="$3"
+numcopies="$4"
+options="$5"
+filename="/var/spool/cups/duplex/$job.duplex"
+
+
+lp_args=
+for opt in $options
+do
+	lp_args="$lp_args -o $opt"
+done
+
+#test if file exists
+while [ ! -f "$filename" ]
+do
+  sleep 1
+done
+
+page_count=$(pdfinfo "$filename" | grep Pages | awk '{print $2}')
+echo "page count: $page_count"
+
+#printing odd
+lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=odd -o collate=true -t "$title"-even "$filename"
+
+if [ $(( $page_count )) -gt 1 ]
+then
+  if sudo -u $user zenity --question --title="$title" --text="Flip and reinsert the entire stack when printing has finished, then press Procceed." --ok-label="Proceed" --cancel-label="Cancel" --display=:0.0 --width="1000"
+  then
+    #printing even
+    lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=even -o collate=true -t "$title"-odd "$filename"
+
+#    My cups does this automagically
+#    #PRINT ONE BLANK.
+#    if [ $(($page_count%2)) -eq 1 ];
+#    then
+#       #All pages are odd. outputting a blank even
+#       echo | lp -s -t "$filename"-blank
+#    fi
+  else
+    echo >&2 User abort
+    rm "$filename"
+    exit 0
+  fi
+fi
+
+rm "$filename"
+exit 0
