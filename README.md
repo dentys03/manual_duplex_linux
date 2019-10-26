@@ -1,8 +1,8 @@
-# manual_duplex_linux
+# manual duplex printing for linux
 Driver for manual duplex (double side printing) for HP printers. 
 Duplexer unit for HP printers.
 
-Bulding on this:
+Inspired by:
 https://askubuntu.com/questions/981020/use-a-script-as-a-printer-to-process-output-pdf
 
 and this:
