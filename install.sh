@@ -1,5 +1,5 @@
 #!/bin/bash
-all_printers=$(lpstat -s | tail -2 | awk '{print $3}' | sed 's/.$//')
+all_printers=$(lpstat -s | tail +2 | awk '{print $3}' | sed 's/.$//')
 
 echo
 echo "These are your installed printers:"
@@ -33,6 +33,11 @@ function setup_duplexer {
   #create dir for files to be printed
   mkdir -p /var/spool/cups/duplex/
   chmod 777 /var/spool/cups/duplex/
+  #create dir for our files
+  mkdir -p /usr/share/manual_duplex_linux/
+  cp printer.png /usr/share/manual_duplex_linux/
+  cp document-print.svg /usr/share/manual_duplex_linux/
+
   #permit lp user to run zenity as the user running the installer
   zenity_user=$(logname)
   touch /etc/sudoers.d/lp
