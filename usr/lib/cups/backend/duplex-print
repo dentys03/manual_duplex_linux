@@ -59,13 +59,13 @@ then
     lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=even -o collate=true -t "$title"-odd "$filename"
 
 #    My cups does this automagically
-#    #PRINT ONE BLANK.
-#    if [ $(($page_count%2)) -eq 1 ];
-#    then
-#       #All pages are odd. outputting a blank even
-#       echo | lp -s -t "$filename"-blank
-#    fi
-  else
+    #PRINT ONE BLANK.
+    if [ $(($page_count%2)) -eq 1 ];
+    then
+       #All pages are odd. outputting a blank even
+       echo | lp -s -t "$filename"-blank
+    fi
+ else
     echo >&2 User abort
     rm "$filename"
     exit 0
