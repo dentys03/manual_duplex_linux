@@ -68,12 +68,11 @@ elif [ $(( $page_count )) -gt 1 ]; then
 ## Printing even pages first makes this not to be needed.
 ##    My cups does this automagically
 ##       PRINT ONE BLANK.
-#    if [ $(($page_count%2)) -eq 1 ];
-#    then
+#	if (( $page_count % 2 )); then
 #       #All pages are odd. outputting a blank even
 #       echo | lp -s -t "$filename"-blank
 #    fi
-    else
+	else
         echo >&2 User abort
         rm "$filename"
         exit 0

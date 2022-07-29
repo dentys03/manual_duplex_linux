@@ -24,3 +24,4 @@ and this:
 https://unix.stackexchange.com/questions/137081/using-a-shell-script-as-a-virtual-printer
 
 It's tested on HP-3630 printers with PDF files. It should work on any printer.
+It works perfectly on Samsung ML-2525W too ( using network connection, ubuntu 18.04 ).
