@@ -1,6 +1,10 @@
 #!/bin/bash
 #Uncomment this to log to /var/log/cups/error_log
-#set -x
+LOG() {
+    echo "$@" >> /var/log/cups/error_log
+}
+
+LOG Starting duplexer job
 
 #TODO:
 # - figure out why and when printer is spitting one blank file.
@@ -44,35 +48,41 @@ do
 done
 
 page_count=$(pdfinfo "$filename" | grep Pages | awk '{print $2}')
-echo "page count: $page_count"
+LOG "page count: $page_count"
 
 #if only one page, just send the printing command
 if [ $(( $page_count )) -eq 1 ]; then
-    lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o collate=true -t "$title"-even "$filename"
+	LOG printing ONE page
+	lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o collate=true -t "$title"-even "$filename"
 
-#if more than one pages, print even pages first and show user interface
+#if more than one pages, print odd pages first and show user interface
 elif [ $(( $page_count )) -gt 1 ]; then
-    lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=even -o collate=true -o outputorder=reverse -t "$title"-even "$filename"
-    #show user interface
-    if sudo -u $user zenity --question --title="$title" \
+	LOG more than one page was sent. printing odd pages
+	lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=odd -o collate=true -o outputorder=normal -t "$title"-odd "$filename"
+	#show user interface
+	if sudo -u $user zenity --question --title="$title" \
         --text="<big><b>Flip and reinsert the entire paper stack when printing has finished,\n\n then press Procceed.</b></big>\n\n\n\n
          Finding my work usefull?               <a href='https://www.paypal.com/paypalme2/nanonetK3'>Click here to buy me a cofee.</a>"\
         --icon-name="document-print" \
 	    --window-icon "/usr/share/manual_duplex_linux/printer.png"\
         --ok-label="Proceed" --cancel-label="Cancel" --display=:0.0\
         --width=$(echo $(sudo -u $user xdpyinfo -display :0.0| grep dimensions | sed -r 's/^[^0-9]*([0-9]+).*$/\1/') / 2 | bc); then
-    #printing odd
-    lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=odd -o collate=true -o outputorder=reverse -t "$title"-odd "$filename"
+
+	LOG printing even pages
+	lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=even -o collate=true -o outputorder=normal -t "$title"-even "$filename"
 
 
-## Printing even pages first makes this not to be needed.
-##    My cups does this automagically
-##       PRINT ONE BLANK.
-#	if (( $page_count % 2 )); then
-#       #All pages are odd. outputting a blank even
-#       echo | lp -s -t "$filename"-blank
-#    fi
-	else
+        LOG PRINT ONE BLANK if needed
+#       if [ $((page_count%2)) -eq 0 ]; then
+        if [ `expr $page_count % 2` == 0 ]; then
+                LOG Doing nothing - pages are even
+        else
+                LOG spitting a blank - pages are odd
+#               lp -s -t "$filename"-blank
+        fi
+
+
+    else
         echo >&2 User abort
         rm "$filename"
         exit 0
