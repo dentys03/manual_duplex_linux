@@ -26,7 +26,9 @@ and this:
 https://unix.stackexchange.com/questions/137081/using-a-shell-script-as-a-virtual-printer
 
 It should work on any printer and any linux with cups.
+
 It's tested on HP-3630 printers with PDF and LibreOffice files (Ubuntu and Debian). 
+
 It works perfectly on Samsung ML-2525W too ( using network connection, Ubuntu 18.04 ).
 
 
@@ -35,6 +37,8 @@ It works perfectly on Samsung ML-2525W too ( using network connection, Ubuntu 18
 Due to this bug:
 https://bugs.launchpad.net/ubuntu/+source/cups-filters/+bug/1340435
 
-it's not needed to print one blank page.
-If your cups-filters are older than 1.0.55, uncomment usr/lib/cups/backend/duplex-print from line 84
+It's not needed to print one blank page.
+
+If your cups-filters are older than 1.0.55, uncomment usr/lib/cups/backend/duplex-print from line 84.
+
 This might be needed on non debian based systems (But i havent tested. Someone please feedback on this).
