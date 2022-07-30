@@ -15,6 +15,8 @@ The most intuitive and simple manual duplex driver for linux:
 
 ## About
 This driver installs a virtual printer on top of the printer you choose at the install prompt.
+Will print odd pages, will display a window with instructions in which you click "proceed" after you flip the finished odd pages.
+
 So most of the settings are done in your phisical printer.
 If you have more than one printer, you can run install.sh for every printer.
 
