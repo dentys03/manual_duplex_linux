@@ -5,15 +5,10 @@
 #
 # -o page-set=even makes the printer spit one blank before printing
 # looks like it has something to do with the duplex printing instructions
-
-
 #Uncomment this to log to /var/log/cups/error_log
 LOG() {
     echo "$@" >> /var/log/cups/error_log
 }
-
-LOG Starting duplexer job
-
 # Output "Device Discovery" information on stdout:
 if test "$#" = "0"
 then
@@ -38,6 +33,12 @@ numcopies="$4"
 options="$5"
 filename="/var/spool/cups/duplex/$job.duplex"
 
+export DISPLAY=$(w -h $user | awk '$2 ~ /:[0-9.]*/{print $2}')
+LOG ---
+LOG $(date) --- Starting duplexer job
+LOG $(date) --- Script called by $user
+LOG $(date) --- Running on display number $DISPLAY
+
 
 lp_args=
 for opt in $options
@@ -52,28 +53,30 @@ do
 done
 
 page_count=$(pdfinfo "$filename" | grep Pages | awk '{print $2}')
-LOG "page count: $page_count"
+LOG $(date) --- "page count: $page_count"
 
 #if only one page, just send the printing command
 if [ $(( $page_count )) -eq 1 ]; then
-	LOG printing ONE page
+	LOG $(date) --- printing ONE page
 	lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o collate=true -o orientation-requested=6 -t "$title"-even "$filename"
 
 #if more than one pages, print odd pages first and show user interface
 elif [ $(( $page_count )) -gt 1 ]; then
-	LOG more than one page was sent. printing odd pages
+	LOG $(date) --- more than one page was sent. printing odd pages
 	lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=odd -o collate=true -o outputorder=normal \
 		-o orientation-requested=6 -t "$title"-odd "$filename"
 	#show user interface
+	LOG $(date) --- Will Show user interface.
 	if sudo -u $user zenity --question --title="$title" \
         --text="<big><b>Flip and reinsert the entire paper stack when printing has finished,\n\n then press Procceed.</b></big>\n\n\n\n
          Finding my work usefull?               <a href='https://www.paypal.com/paypalme2/nanonetK3'>Click here to buy me a cofee.</a>"\
         --icon-name="document-print" \
 	    --window-icon "/usr/share/manual_duplex_linux/printer.png"\
         --ok-label="Proceed" --cancel-label="Cancel" --display=$DISPLAY\
-        --width=$(echo $(sudo -u $user xdpyinfo -display $DISPLAY | grep dimensions | sed -r 's/^[^0-9]*([0-9]+).*$/\1/') / 2 | bc); then
+        --width=$(echo $(sudo -u $user xdpyinfo -display $DISPLAY | grep dimensions | sed -r 's/^[^0-9]*([0-9]+).*$/\1/') / 2 | bc) >> /var/log/cups/error_log  ; then
+	LOG $(date) --- User interface has been shown.
 
-	LOG printing even pages
+	LOG $(date) --- printing even pages
 	lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=even -o collate=true -o outputorder=normal \
 		-o orientation-requested=6 -t "$title"-even "$filename"
 
@@ -81,11 +84,11 @@ elif [ $(( $page_count )) -gt 1 ]; then
 # UNCOMMENT IF CUPS-FILTERS VERSION IS BELOW 1.0.55
 # Also SET your main printer as default printer
 # SEE https://bugs.launchpad.net/ubuntu/+source/cups-filters/+bug/1340435
-#        LOG PRINT ONE BLANK if needed
+#        LOG $(date) --- PRINT ONE BLANK if needed
 #        if [ `expr $page_count % 2` == 0 ]; then
-#		LOG No need for blanks - pages are even
+#		LOG $(date) --- No need for blanks - pages are even
 #        else
-#		LOG spitting a blank - pages are odd
+#		LOG $(date) --- spitting a blank - pages are odd
 #		echo |  lp -s -t "$filename"-blank
 #        fi
 
