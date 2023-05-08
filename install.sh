@@ -108,7 +108,7 @@ then
       setup_duplexer $first_printer
   else
     echo
-    echo "Nothing was changed."
+    echo "Nothing was changed. Maybe use capital Y ?"
     echo
     exit 0
   fi
