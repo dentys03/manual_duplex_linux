@@ -70,8 +70,8 @@ elif [ $(( $page_count )) -gt 1 ]; then
          Finding my work usefull?               <a href='https://www.paypal.com/paypalme2/nanonetK3'>Click here to buy me a cofee.</a>"\
         --icon-name="document-print" \
 	    --window-icon "/usr/share/manual_duplex_linux/printer.png"\
-        --ok-label="Proceed" --cancel-label="Cancel" --display=:0.0\
-        --width=$(echo $(sudo -u $user xdpyinfo -display :0.0| grep dimensions | sed -r 's/^[^0-9]*([0-9]+).*$/\1/') / 2 | bc); then
+        --ok-label="Proceed" --cancel-label="Cancel" --display=$DISPLAY\
+        --width=$(echo $(sudo -u $user xdpyinfo -display $DISPLAY | grep dimensions | sed -r 's/^[^0-9]*([0-9]+).*$/\1/') / 2 | bc); then
 
 	LOG printing even pages
 	lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=even -o collate=true -o outputorder=normal \
