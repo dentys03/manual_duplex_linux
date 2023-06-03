@@ -1,7 +1,29 @@
 #!/bin/bash
+# Startup checks
+# Script must be run as user with sudo capabilities
+clear
+echo "This script must be run from a limited account with root privileges.".
+echo "Run the installation for every user which need the duplex driver."
+echo
+
+if [ $(logname) == root ]; then
+  echo "Don't run this as root"
+  echo ""
+  exit 1
+fi
+if [ $(whoami) != root ]; then
+  echo "Use sudo to become root."
+  echo ""
+  exit 1
+fi
+
+#TODO
+# add option to install for all users at once
+# all_users=$(awk -F: '($3>=1000)&&($1!="nobody"){print $1}' /etc/passwd)
+
 all_printers=$(lpstat -s | tail +2 | awk '{print $3}' | sed 's/.$//')
 
-echo
+clear
 echo "These are your installed printers:"
 echo
 declare printers_array
@@ -38,11 +60,15 @@ function setup_duplexer {
   cp printer.png /usr/share/manual_duplex_linux/
   cp document-print.svg /usr/share/manual_duplex_linux/
 
-  #permit lp user to run zenity as the user running the installer
+  # Permit lp user to run zenity as the user running the installer
   zenity_user=$(logname)
   touch /etc/sudoers.d/lp
   chmod 640 /etc/sudoers.d/lp
-  echo '#user	host = (runas user) command' > /etc/sudoers.d/lp
+  # Remove previous entries of user installing the driver from sudoers.d/lp file. Prerequisite for multi user and helps with keeping the sudoers.d/lp file small
+  sed -i "/lp ALL=($zenity_user) NOPASSWD:\/usr\/bin\/zenity/d" /etc/sudoers.d/lp
+  sed -i "/\#user	host = (runas user) command/d" /etc/sudoers.d/lp
+  # Append permissions to sudoers
+  echo '#user	host = (runas user) command' >> /etc/sudoers.d/lp
   echo "lp ALL=($zenity_user) NOPASSWD:/usr/bin/zenity" >> /etc/sudoers.d/lp
   chmod 440 /etc/sudoers.d/lp
 
@@ -87,32 +113,26 @@ function setup_duplexer {
 }
 
 clear
-if [ $(whoami) == root ]
+echo
+echo "This script assumes /var/spool/cups/ is the folder used by the printing system."
+echo
+echo "The script will add"
+echo "                        $first_printer "
+echo
+echo " printer with the duplex setup. Is this what you want?"
+echo
+echo "(Y/N) followed by [ENTER]:"
+read approve
+
+if [ $approve == "Y" ]
 then
   echo
-  echo "This script assumes /var/spool/cups/ is the folder used by the printing system."
   echo
-  echo "The script will add"
-  echo "                        $first_printer "
   echo
-  echo " printer with the duplex setup. Is this what you want?"
-  echo
-  echo "(Y/N) followed by [ENTER]:"
-  read approve
-
-  if [ $approve == "Y" ]
-  then
-	echo
-	echo
-	echo
-      setup_duplexer $first_printer
+    setup_duplexer $first_printer
   else
-    echo
-    echo "Nothing was changed. Maybe use capital Y ?"
-    echo
-    exit 0
-  fi
-else
-  echo "This must be run as root."
-  exit 1
+  echo
+  echo "Nothing was changed. Maybe use capital Y ?"
+  echo
+  exit 0
 fi
