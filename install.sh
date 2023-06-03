@@ -60,7 +60,7 @@ function setup_duplexer {
   cp printer.png /usr/share/manual_duplex_linux/
   cp document-print.svg /usr/share/manual_duplex_linux/
 
-  # Permit lp user to run zenity as the user running the installer
+  # Allow lp user to run zenity as the user running the installer
   zenity_user=$(logname)
   touch /etc/sudoers.d/lp
   chmod 640 /etc/sudoers.d/lp
