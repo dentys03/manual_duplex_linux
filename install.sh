@@ -23,7 +23,6 @@ fi
 
 all_printers=$(lpstat -s | tail +2 | awk '{print $3}' | sed 's/.$//')
 
-clear
 echo "These are your installed printers:"
 echo
 declare printers_array
@@ -112,7 +111,6 @@ function setup_duplexer {
   exit 0
 }
 
-clear
 echo
 echo "This script assumes /var/spool/cups/ is the folder used by the printing system."
 echo
