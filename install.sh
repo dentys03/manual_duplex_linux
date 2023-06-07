@@ -21,7 +21,7 @@ fi
 # add option to install for all users at once
 # all_users=$(awk -F: '($3>=1000)&&($1!="nobody"){print $1}' /etc/passwd)
 
-all_printers=$(lpstat -s | tail +2 | awk '{print $3}' | sed 's/.$//')
+all_printers=$(lpstat -s | tail -n +2 | awk '{print $3}' | sed 's/.$//')
 
 echo "These are your installed printers:"
 echo
