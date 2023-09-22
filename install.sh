@@ -81,7 +81,7 @@ fi
 command="export DISPLAY=$chosen_display"
 
 echo "Writing to usr/lib/cups/backend/duplex-print"
-echo "$command" | cat - usr/lib/cups/backend/duplex-print > temp && mv temp usr/lib/cups/backend/duplex-print
+sed -i "2i $command" usr/lib/cups/backend/duplex-print
 
 fi
 

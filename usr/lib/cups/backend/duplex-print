@@ -1,5 +1,5 @@
 #!/bin/bash
-
+#!!! THIS LINE(second line) WILL BE OVERWRITTEN BY THE INSTALL SCRIPT !!!
 #TODO:
 # - figure out why and when printer is spitting one blank file.
 #
