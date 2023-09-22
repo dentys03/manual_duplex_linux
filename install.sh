@@ -155,8 +155,40 @@ function setup_duplexer {
   echo
   echo "Duplexer installed."
   echo
+  #! NOT FINISHED
+
+  echo
+  echo "Do you wish to set up xhost to allow the cups user to access the display?"
+  echo "(Y/N) followed by [ENTER]:"
+  read approve
+
+  if [ $approve == "Y" ]
+  then
+    echo
+    xhost +local:cups
+    echo "
+[Unit]
+Description=My Startup Script
+
+[Service]
+ExecStart=/path/to/your/script.sh
+Type=oneshot
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+    " > /etc/systemd/system/xhost.service
+    echo
+    systemctl daemon-reload
+    systemctl enable xhost.service
+    systemctl start xhost.service
+    else
+    echo
+    echo "Nothing was changed. Maybe use capital Y ?"
+    exit 0
+  fi
   exit 0
-}
+  }
 
 echo
 echo "This script assumes /var/spool/cups/ is the folder used by the printing system."
@@ -181,3 +213,5 @@ then
   echo
   exit 0
 fi
+
+

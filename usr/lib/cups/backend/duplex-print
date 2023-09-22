@@ -1,5 +1,4 @@
 #!/bin/bash
-export DISPLAY=:0
 
 #TODO:
 # - figure out why and when printer is spitting one blank file.
