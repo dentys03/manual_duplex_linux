@@ -38,6 +38,53 @@ echo "Type the number of the printer you want to add duplexing capabilities, the
 echo
 read chosen_printer
 
+# Ask a user about the display they want to use
+
+echo "Do you wish to set up a permament display for the comunicats?"
+echo "(Y/N) followed by [ENTER]:"
+read -r approve
+
+if [ "$approve" == "Y" ]
+then
+
+displays=$(
+  xdpyinfo | awk '{
+  while (match($0, /[[:space:][:digit:]]:[[:digit:]](\.[[:digit:]])?/)) {
+  print substr($0, RSTART, RLENGTH)
+  $0 = substr($0, RSTART + RLENGTH)
+  }
+  }'
+)
+# iterate through the display numbers and print them out
+echo "These are your displays: "
+declare displays_array
+i=0
+for d in $displays
+do
+  i=$(( i + 1 ))
+  echo $i. "$d"
+  displays_array[i]=$d
+done
+
+echo
+echo "Type the number of the display you want to show the popups to, then type ENTER:"
+echo
+read -r chosen_display
+
+display=${displays_array[$chosen_display]}
+if [ -z "$display" ]
+then
+  echo "No display selected. You trickster!"
+  exit 1
+fi
+
+command="export DISPLAY=$chosen_display"
+
+echo "Writing to usr/lib/cups/backend/duplex-print"
+echo "$command" | cat - usr/lib/cups/backend/duplex-print > temp && mv temp usr/lib/cups/backend/duplex-print
+
+fi
+
 first_printer=${printers_array[$chosen_printer]}
 
 function setup_duplexer {
