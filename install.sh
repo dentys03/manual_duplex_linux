@@ -78,7 +78,7 @@ then
   exit 1
 fi
 
-command="export DISPLAY=$chosen_display"
+command="export DISPLAY=$display"
 
 echo "Writing to usr/lib/cups/backend/duplex-print"
 sed -i "2i $command" usr/lib/cups/backend/duplex-print
