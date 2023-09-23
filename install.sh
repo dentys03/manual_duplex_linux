@@ -1,19 +1,47 @@
 #!/bin/bash
 # Startup checks
 # Script must be run as user with sudo capabilities
+
+
+# Colors for more readable output
+# Text colors
+T_RED='\e[31m'
+T_GREEN='\e[32m'
+T_YELLOW='\e[33m'
+T_CYAN='\e[36m'
+
+# Text formatting
+TF_RESET='\e[0m'
+TF_BOLD='\e[1m'
+
+
+log() {
+    echo -e "${T_GREEN}[I]$*${TF_RESET}" 
+}
+
+log_error() {
+    echo -e "${T_RED}[Error]$*${TF_RESET}"
+}
+
+log_warning() {
+    echo -e "${T_YELLOW}[Warn]$*${TF_RESET}"
+}
+
+log_question() {
+    echo -e "${T_CYAN}[?]$*${TF_RESET}"
+}
+
 clear
-echo "This script must be run from a limited account with root privileges.".
-echo "Run the installation for every user which need the duplex driver."
-echo
+log "This script must be run from a limited account with root privileges."
+log "Run the installation for every user which need the duplex driver."
 
 if [ $(logname) == root ]; then
-  echo "Don't run this as root"
-  echo ""
+  log_error "Don't run this as root"
+
   exit 1
 fi
 if [ $(whoami) != root ]; then
-  echo "Use sudo to become root."
-  echo ""
+  log_error "Use sudo to become root"
   exit 1
 fi
 
@@ -22,27 +50,27 @@ fi
 # all_users=$(awk -F: '($3>=1000)&&($1!="nobody"){print $1}' /etc/passwd)
 
 all_printers=$(lpstat -s | tail -n +2 | awk '{print $3}' | sed 's/.$//')
+log_question "Type the number of the printer you want to add duplexing capabilities, then type ENTER:"
+log_question "These are your installed printers:"
 
-echo "These are your installed printers:"
-echo
 declare printers_array
 i=0
 for p in $all_printers
 do
   i=$(( $i + 1 ))
-  echo $i. $p
+  log_question "$i. $p"
   printers_array[$i]=$p
 done
-echo
-echo "Type the number of the printer you want to add duplexing capabilities, then type ENTER:"
-echo
-read chosen_printer
+
+read -e -r chosen_printer
 
 # Ask a user about the display they want to use
+log "---"
 
-echo "Do you wish to set up a permament display for the comunicats?"
-echo "(Y/N) followed by [ENTER]:"
-read -r approve
+
+log_question "Do you wish to set up a permament display for the comunicats?"
+log_question "(Y/N) followed by [ENTER]:"
+read -e -r approve
 
 if [ "$approve" == "Y" ]
 then
@@ -56,31 +84,28 @@ displays=$(
   }'
 )
 # iterate through the display numbers and print them out
-echo "These are your displays: "
+log_question "Select the display you want to use [number][ENTER]: "
 declare displays_array
 i=0
 for d in $displays
 do
   i=$(( i + 1 ))
-  echo $i. "$d"
+  log_question " $i. $d"
   displays_array[i]=$d
 done
 
-echo
-echo "Type the number of the display you want to show the popups to, then type ENTER:"
-echo
-read -r chosen_display
+read -e -r chosen_display
 
 display=${displays_array[$chosen_display]}
 if [ -z "$display" ]
 then
-  echo "No display selected. You trickster!"
+  log_error "No display selected, you trickster!"
   exit 1
 fi
 
 command="export DISPLAY=$display"
 
-echo "Writing to usr/lib/cups/backend/duplex-print"
+log "Writing to usr/lib/cups/backend/duplex-print"
 sed -i "2i $command" usr/lib/cups/backend/duplex-print
 
 fi
@@ -91,11 +116,11 @@ function setup_duplexer {
   first_printer=$1
   if [ -z "$first_printer" ]
   then
-    echo "No printer submitted. You trickster!"
+    log_error "No printer selected, you trickster!"
     exit 1
   else
-    echo "found printer: "$first_printer
-    echo going ahead.
+    log "Found printer: $first_printer"
+    log "Setting up duplexer"
   fi
 
   CUPS_LIB_DIR="/usr/lib/cups"
@@ -134,7 +159,7 @@ function setup_duplexer {
   chown root:root $CUPS_LIB_DIR/backend-available/duplex-print
   chmod 700 $CUPS_LIB_DIR/backend-available/duplex-print
 
-  echo "Deleting printer if already exists"
+  log "Deleteing if already exists"
   lpadmin -x Manual_Duplexer_$first_printer
 
   cp -praf /etc/cups/ppd/$first_printer.ppd /etc/cups/ppd/Manual_Duplexer_$first_printer.ppd
@@ -159,50 +184,37 @@ function setup_duplexer {
   lpadmin -p Manual_Duplexer_$first_printer -E -v duplex-print:$first_printer -P /etc/cups/ppd/Manual_Duplexer_$first_printer.ppd
   lpadmin -d Manual_Duplexer_$first_printer
 
-  echo
-  echo "Duplexer installed."
-  echo
-  #! NOT FINISHED
 
-  echo
-  echo "Do you wish to set up xhost to allow the cups user to access the display using the .config/autostart directory?"
-  echo "WARNING: This can compromise Xserver security by allowing cups user group to acces the session"
-  echo "(Y/N) followed by [ENTER]:"
-  read -r approve
+  log "Duplexer installed"
+  log_question "Do you wish to set up xhost to allow the cups user to access the display using the .config/autostart directory? [Y/N][ENTER]"
+  log_warning "This can compromise Xserver security by allowing cups user group to acces the session"
+  
+  read -e -r approve
 
   if [ "$approve" == "Y" ]
   then
-    echo
     cp -rf home/.config/autostart/xhost_cups.desktop /home/"$SUDO_USER"/.config/autostart/xhost_cups.desktop
     else
-    echo
-    echo "Nothing was changed. Maybe use capital Y ?"
+    log_error "Nothing was changed. Maybe use capital Y?"
     exit 0
   fi
   exit 0
   }
 
-echo
-echo "This script assumes /var/spool/cups/ is the folder used by the printing system."
-echo
-echo "The script will add"
-echo "                        $first_printer "
-echo
-echo " printer with the duplex setup. Is this what you want?"
-echo
-echo "(Y/N) followed by [ENTER]:"
-read approve
+log "This script assumes /var/spool/cups/ is the folder used by the printing system"
+log_question "The script will add"
+log_question "  ${TF_BOLD}$first_printer"
+log_question "printer with the duplex setup. Is this what you want?"
+log_question "(Y/N) followed by [ENTER]:"
+read -e -r approve
 
 if [ $approve == "Y" ]
 then
-  echo
-  echo
-  echo
     setup_duplexer $first_printer
   else
-  echo
-  echo "Nothing was changed. Maybe use capital Y ?"
-  echo
+
+  log_error "Nothing was changed. Maybe use capital Y?"
+
   exit 0
 fi
 
