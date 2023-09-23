@@ -165,30 +165,31 @@ function setup_duplexer {
   #! NOT FINISHED
 
   echo
-  echo "Do you wish to set up xhost to allow the cups user to access the display?"
+  echo "Do you wish to set up xhost to allow the cups user to access the display using a systemd service?"
   echo "(Y/N) followed by [ENTER]:"
-  read approve
+  read -r approve
 
-  if [ $approve == "Y" ]
+  if [ "$approve" == "Y" ]
   then
     echo
-    xhost +local:cups
     echo "
 [Unit]
-Description=My Startup Script
+Description=Allow local user 'cups' to access the X server
 
 [Service]
-ExecStart=/path/to/your/script.sh
-Type=oneshot
-RemainAfterExit=yes
+ExecStart=/usr/bin/xhost +SI:localuser:cups
+Restart=always
+User=$SUDO_USER
+Environment=DISPLAY=:0  # Modify this if necessary
 
 [Install]
 WantedBy=multi-user.target
-    " > /etc/systemd/system/xhost.service
+
+    " > /etc/systemd/system/xhost_cups.service
     echo
     systemctl daemon-reload
-    systemctl enable xhost.service
-    systemctl start xhost.service
+    systemctl enable xhost_cups.service
+    systemctl start xhost_cups.service
     else
     echo
     echo "Nothing was changed. Maybe use capital Y ?"
