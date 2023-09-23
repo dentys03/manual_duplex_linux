@@ -51,6 +51,9 @@ function setup_duplexer {
     echo going ahead.
   fi
 
+  CUPS_LIB_DIR="/usr/lib/cups"
+  [ -d /usr/libexec/cups ] && [ ! -d /usr/lib/cups ] && CUPS_LIB_DIR="/usr/libexec/cups"
+
   #create dir for files to be printed
   mkdir -p /var/spool/cups/duplex/
   chmod 777 /var/spool/cups/duplex/
@@ -61,6 +64,7 @@ function setup_duplexer {
 
   # Allow lp user to run zenity as the user running the installer
   zenity_user=$(logname)
+  [ ! -d /etc/sudoers.d ] && mkdir /etc/sudoers.d
   touch /etc/sudoers.d/lp
   chmod 640 /etc/sudoers.d/lp
   # Remove previous entries of user installing the driver from sudoers.d/lp file. Prerequisite for multi user and helps with keeping the sudoers.d/lp file small
@@ -71,16 +75,17 @@ function setup_duplexer {
   echo "lp ALL=($zenity_user) NOPASSWD:/usr/bin/zenity" >> /etc/sudoers.d/lp
   chmod 440 /etc/sudoers.d/lp
 
-  cp -rf usr/lib/cups/filter/duplex_print_filter /usr/lib/cups/filter/duplex_print_filter
-  chown root:root /usr/lib/cups/filter/duplex_print_filter
-  chmod 755 /usr/lib/cups/filter/duplex_print_filter
+  cp -rf usr/lib/cups/filter/duplex_print_filter $CUPS_LIB_DIR/filter/duplex_print_filter
+  chown root:root $CUPS_LIB_DIR/filter/duplex_print_filter
+  chmod 755 $CUPS_LIB_DIR/filter/duplex_print_filter
 
-  cp -rf usr/lib/cups/backend/duplex-print /usr/lib/cups/backend/duplex-print
-  chown root:root /usr/lib/cups/backend/duplex-print
-  chmod 700 /usr/lib/cups/backend/duplex-print
-  cp -rf usr/lib/cups/backend/duplex-print /usr/lib/cups/backend-available/duplex-print
-  chown root:root /usr/lib/cups/backend-available/duplex-print
-  chmod 700 /usr/lib/cups/backend-available/duplex-print
+  cp -rf usr/lib/cups/backend/duplex-print $CUPS_LIB_DIR/backend/duplex-print
+  chown root:root $CUPS_LIB_DIR/backend/duplex-print
+  chmod 700 $CUPS_LIB_DIR/backend/duplex-print
+  [ ! -d $CUPS_LIB_DIR/backend-available ] && mkdir $CUPS_LIB_DIR/backend-available
+  cp -rf usr/lib/cups/backend/duplex-print $CUPS_LIB_DIR/backend-available/duplex-print
+  chown root:root $CUPS_LIB_DIR/backend-available/duplex-print
+  chmod 700 $CUPS_LIB_DIR/backend-available/duplex-print
 
   echo "Deleting printer if already exists"
   lpadmin -x Manual_Duplexer_$first_printer
@@ -99,7 +104,9 @@ function setup_duplexer {
 
   sleep 1
 
-  service cups restart
+  service cups restart &> /dev/null
+  rc-service cupsd restart &> /dev/null
+  systemctl restart cups &> /dev/null
 
   #add duplexing printer
   lpadmin -p Manual_Duplexer_$first_printer -E -v duplex-print:$first_printer -P /etc/cups/ppd/Manual_Duplexer_$first_printer.ppd
