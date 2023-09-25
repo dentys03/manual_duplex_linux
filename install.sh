@@ -66,12 +66,10 @@ read -e -r chosen_printer
 
 # Ask a user about the display they want to use
 log "---"
-
-
-log_question "Do you wish to set up a permament display for the comunicats?"
-log_question "(Y/N) followed by [ENTER]:"
-read -e -r approve
-
+log_warning "Setting up a permament display may cause issues with the comunicats! On some linux distributions it may be neccecery!"
+echo -e "$T_CYAN"
+read -e -r -p "[?]Do you wish to set up a permament display for the comunicats? [y/N]" -i "N" approve
+echo -e "$TF_RESET"
 if [ "$approve" == "Y" ]
 then
 
