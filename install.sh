@@ -70,7 +70,8 @@ log_warning "Setting up a permament display may cause issues with the comunicats
 echo -e "$T_CYAN"
 read -e -r -p "[?]Do you wish to set up a permament display for the comunicats? [y/N]" -i "N" approve
 echo -e "$TF_RESET"
-if [ "$approve" == "Y" ]
+# Cheking for lower case too since we suggest to the user to enter N by making y lower case, this may confuse someone.
+if [ "$approve" == "Y" ] || [ "$approve" == "y" ]
 then
 
 displays=$(
