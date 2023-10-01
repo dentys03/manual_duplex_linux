@@ -1,0 +1,7 @@
+[Desktop Entry]
+Exec=/usr/bin/xhost +local:cups
+Icon=
+Name=xhost_cups
+Path=
+Terminal=False
+Type=Application

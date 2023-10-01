@@ -67,8 +67,12 @@ elif [ $(( $page_count )) -gt 1 ]; then
 	#show user interface
 	LOG $(date) --- Will Show user interface.
 
-	#export display for zenity to use
-	export DISPLAY=$(who -su | grep $user | awk '$2 ~ /:[0-9.]*/{print $2}')
+  if [ -z "$DISPLAY" ]; then
+    LOG $(date) --- "No display found trying to set one" 
+    #export display for zenity to use
+    export DISPLAY=$(who -su | grep $user | awk '$2 ~ /:[0-9.]*/{print $2}')
+	fi
+
 	LOG $(date) --- Running on display number $DISPLAY
 	sudo --user=$user \
 	zenity --question --title="$title" \
@@ -85,8 +89,7 @@ elif [ $(( $page_count )) -gt 1 ]; then
 		LOG $(date) --- printing even pages
 		lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=even -o collate=true -o outputorder=normal \
 			-o orientation-requested=6 -t "$title"-even "$filename"
-
-
+  LOG $(date) --- printing done - removed xhost
 # UNCOMMENT IF CUPS-FILTERS VERSION IS BELOW 1.0.55
 # Also SET your main printer as default printer
 # SEE https://bugs.launchpad.net/ubuntu/+source/cups-filters/+bug/1340435
