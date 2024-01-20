@@ -29,6 +29,7 @@ Inspired by:
 It should work on any printer and any linux with cups:
 - It's tested on HP-3630 printers with PDF and LibreOffice files (Ubuntu and Debian). 
 - It works perfectly on Samsung ML-2525W too ( using network connection, Ubuntu 18.04 ).
+- Confirmed to work on Gentoo.
 
 
 
