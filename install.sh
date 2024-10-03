@@ -113,7 +113,7 @@ function setup_duplexer {
   lpadmin -d Manual_Duplexer_$first_printer
 
   echo
-  echo "Duplexer installed."
+  echo "Script finished. Not much checking for errors was done. To be done in a future update."
   echo
   exit 0
 }
