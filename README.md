@@ -8,7 +8,7 @@ The most intuitive and simple manual duplex driver for linux:
 
 ## HOW TO
 1. Make sure your printer is installed;
-2. Run ./install.sh as root;
+2. Run ./install.sh as root (Download, extract, make sure files extracted without errors, move to the install.sh folder);
 3. Send print jobs to your new manual_duplex printer;
 4. Sit back and sip a coffe.
 
