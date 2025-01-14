@@ -68,7 +68,9 @@ elif [ $(( $page_count )) -gt 1 ]; then
 	LOG $(date) --- Will Show user interface.
 
 	#export display for zenity to use
-	export DISPLAY=$(who -su | grep $user | awk '$2 ~ /:[0-9.]*/{print $2}')
+#	export DISPLAY=$(who -su | grep $user | awk '$2 ~ /:[0-9.]*/{print $2}')
+#	more robust version
+	export DISPLAY=$(who | grep "^$user" | awk '{print $NF}' | grep -oE ':[0-9]+')
 	LOG $(date) --- Running on display number $DISPLAY
 	sudo --user=$user \
 	zenity --question --title="$title" \
