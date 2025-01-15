@@ -60,7 +60,7 @@ LOG $(date) --- "page count: $page_count"
 export DISPLAY=$(who | grep "^$user" | awk '{print $NF}' | grep -oE ':[0-9]+')
 # Calculate width (Assuming you want one-third of the screen width)
 screen_width=$(sudo -u "$user" xdpyinfo -display "$DISPLAY" | awk '/dimensions:/ {print $2}' | cut -d'x' -f1)
-width=$(( screen_width / 3 ))
+zenity_width=$(( screen_width / 3 ))
 
 
 if [ $(( $page_count )) -gt 1 ]; then
@@ -78,7 +78,7 @@ if [ $(( $page_count )) -gt 1 ]; then
 	    --extra-button="Long_Edge" \
 	    --extra-button="Cancel" \
 		--display="$DISPLAY" \
-	    --width="$width" 2>>"$LogFile")
+	    --width="$zenity_width" 2>>"$LogFile")
 
 	# Capture the exit status
 	last_command_return=$?
@@ -119,19 +119,23 @@ elif [ $(( $page_count )) -eq 2 ]; then
 
 	#show user interface
 	LOG $(date) --- Will Show user interface.
-
-	LOG $(date) --- Running on display number $DISPLAY
-	sudo --user=$user \
-	zenity --question --title="$title" \
-        --text="<big><b>Flip and reinsert the entire paper stack when printing has finished,\n\n then press Procceed.</b></big>\n\n\n\n
-         Finding my work usefull?               <a href='https://www.paypal.com/paypalme2/nanonetK3'>Click here to buy me a cofee.</a>" \
+	LOG $(date) --- Running on display number "$DISPLAY"
+	sudo --user="$user" zenity --question \
+		--title="$title" \
+        --text="<big><b>Flip and reinsert the entire paper stack when printing has finished,\n\n then press Procceed.</b></big>\n\n
+        				Finding my work usefull? <a href='https://www.paypal.com/paypalme2/nanonetK3'>Click here to buy me a cofee.</a>" \
         --icon-name="document-print" \
-        --window-icon "/usr/share/manual_duplex_linux/printer.png" \
-        --ok-label="Proceed" --cancel-label="Cancel" \
-        --display=$DISPLAY \
-        --width=$(echo $(sudo -u $user xdpyinfo -display $DISPLAY | grep dimensions | sed -r 's/^[^0-9]*([0-9]+).*$/\1/') / 3 | bc) 2>>$LogFile; last_command_return=$?
+        --window-icon="/usr/share/manual_duplex_linux/printer.png" \
+        --ok-label="Proceed" \
+        --cancel-label="Cancel" \
+        --display="$DISPLAY" \
+        --width="$zenity_width" 2>>"$LogFile"
 
-    LOG $(date) --- User interface has been shown.
+    # Capture the exit status
+    last_command_return=$?
+    # Log that the user interface was shown
+    LOG "$(date) --- User interface has been shown. Zenity returned >> $last_command_return << and button_clicked >> $button_clicked << "
+
 	if (($last_command_return==0)); then
 		LOG $(date) --- printing even pages
 		if [ $(( $short_edge )) -eq 1 ]; then
@@ -154,17 +158,22 @@ elif [ $(( $page_count )) -gt 2 ]; then
     LOG $(date) --- Will Show user interface.
 
     LOG $(date) --- Running on display number $DISPLAY
-    sudo --user=$user \
-    zenity --question --title="$title" \
-        --text="<big><b>Flip and reinsert the entire paper stack when printing has finished,\n\n then press Procceed.</b></big>\n\n\n\n
-         Finding my work usefull?               <a href='https://www.paypal.com/paypalme2/nanonetK3'>Click here to buy me a cofee.</a>" \
+    sudo --user="$user" zenity --question \
+    	 --title="$title" \
+        --text="<big><b>Flip and reinsert the entire paper stack when printing has finished,\n\n then press Procceed.</b></big>\n\n
+        				Finding my work usefull? <a href='https://www.paypal.com/paypalme2/nanonetK3'>Click here to buy me a cofee.</a>" \
         --icon-name="document-print" \
-        --window-icon "/usr/share/manual_duplex_linux/printer.png" \
-        --ok-label="Proceed" --cancel-label="Cancel" \
-        --display=$DISPLAY \
-        --width=$(echo $(sudo -u $user xdpyinfo -display $DISPLAY | grep dimensions | sed -r 's/^[^0-9]*([0-9]+).*$/\1/') / 3 | bc) 2>>$LogFile; last_command_return=$?
+        --window-icon="/usr/share/manual_duplex_linux/printer.png" \
+        --ok-label="Proceed" \
+        --cancel-label="Cancel" \
+        --display="$DISPLAY" \
+        --width=$zenity_width 2>>"$LogFile"
 
-    LOG $(date) --- User interface has been shown.
+    # Capture the exit status
+    last_command_return=$?
+    # Log that the user interface was shown
+    LOG "$(date) --- User interface has been shown. Zenity returned >> $last_command_return << and button_clicked >> $button_clicked << "
+
     if (($last_command_return==0)); then
         LOG $(date) --- printing even pages
 		if [ $(( $short_edge )) -eq 1 ]; then
