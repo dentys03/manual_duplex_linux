@@ -33,6 +33,9 @@ title="$3"
 numcopies="$4"
 options="$5"
 filename="/var/spool/cups/duplex/$job.duplex"
+short_edge=0
+long_edge=0
+
 
 LOG ---
 LOG $(date) --- Starting duplexer job
@@ -41,7 +44,7 @@ LOG $(date) --- Script called by $user and runs as $(whoami) with logname $(logn
 lp_args=
 for opt in $options
 do
-	lp_args="$lp_args -o $opt"
+    lp_args="$lp_args -o $opt"
 done
 
 #test if file exists
@@ -53,6 +56,56 @@ done
 page_count=$(pdfinfo "$filename" | grep Pages | awk '{print $2}')
 LOG $(date) --- "page count: $page_count"
 
+#   Export display for zenity
+export DISPLAY=$(who | grep "^$user" | awk '{print $NF}' | grep -oE ':[0-9]+')
+# Calculate width (Assuming you want one-third of the screen width)
+screen_width=$(sudo -u "$user" xdpyinfo -display "$DISPLAY" | awk '/dimensions:/ {print $2}' | cut -d'x' -f1)
+width=$(( screen_width / 3 ))
+
+
+if [ $(( $page_count )) -gt 1 ]; then
+	#show user interface
+	LOG "$(date) --- Will Show user interface to get page_edge."
+	LOG "$(date) --- Running on display number $DISPLAY"
+	# Display the Zenity dialog
+	button_clicked=$(sudo --user="$user" zenity --question \
+    	--switch \
+	    --title="$title" \
+	    --text="<big><b>Which edge to choose for paper binding?</b></big>\n\nFinding my work useful? <a href='https://www.paypal.com/paypalme2/nanonetK3'>Click here to buy me a coffee.</a>" \
+	    --icon-name="document-print" \
+	    --window-icon="/usr/share/manual_duplex_linux/printer.png" \
+	    --extra-button="Short_Edge" \
+	    --extra-button="Long_Edge" \
+	    --extra-button="Cancel" \
+		--display="$DISPLAY" \
+	    --width="$width" 2>>"$LogFile")
+
+	# Capture the exit status
+	last_command_return=$?
+	# Log that the user interface was shown
+	LOG "$(date) --- User interface has been shown. Zenity returned >> $last_command_return << and button_clicked >> $button_clicked << "
+
+	# Handle the user's response
+	case "$button_clicked" in
+    	Short_Edge)
+        	LOG "$(date) --- Short edge has been chosen."
+	        short_edge=1
+	        ;;
+	    Long_Edge)
+	        LOG "$(date) --- Long edge has been chosen."
+	        long_edge=1
+	        ;;
+	    Cancel)
+	        LOG "$(date) --- Operation cancelled by user."
+	        exit 1
+	        ;;
+	    *)
+	        LOG "$(date) --- An unexpected error occurred. Exit code: $last_command_return."
+	        exit 1
+	        ;;
+	esac
+fi
+
 #if only one page, just send the printing command
 if [ $(( $page_count )) -eq 1 ]; then
 	LOG $(date) --- printing ONE page
@@ -61,15 +114,12 @@ if [ $(( $page_count )) -eq 1 ]; then
 #if only 2 pages, print odd pages first and show user interface
 elif [ $(( $page_count )) -eq 2 ]; then
 	LOG $(date) --- 2 pages were sent. printing odd pages
-	lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=odd -o collate=true -o outputorder=normal -t "$title"-odd "$filename"
+
+		lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=odd -o collate=true -o outputorder=normal -t "$title"-odd "$filename"
 
 	#show user interface
 	LOG $(date) --- Will Show user interface.
 
-	#export display for zenity to use
-#	export DISPLAY=$(who -su | grep $user | awk '$2 ~ /:[0-9.]*/{print $2}')
-#	more robust version
-	export DISPLAY=$(who | grep "^$user" | awk '{print $NF}' | grep -oE ':[0-9]+')
 	LOG $(date) --- Running on display number $DISPLAY
 	sudo --user=$user \
 	zenity --question --title="$title" \
@@ -84,8 +134,11 @@ elif [ $(( $page_count )) -eq 2 ]; then
     LOG $(date) --- User interface has been shown.
 	if (($last_command_return==0)); then
 		LOG $(date) --- printing even pages
-		lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-ranges=2 -o collate=true -o outputorder=normal -t "$title"-even "$filename"
-
+		if [ $(( $short_edge )) -eq 1 ]; then
+			lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-ranges=2 -o orientation-requested=5 -o collate=true -o outputorder=normal -t "$title"-even "$filename"
+		else
+			lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-ranges=2 -o collate=true -o outputorder=normal -t "$title"-even "$filename"
+		fi
     else
         LOG $(date) --- User aborted print job
         rm "$filename"
@@ -100,10 +153,6 @@ elif [ $(( $page_count )) -gt 2 ]; then
     #show user interface
     LOG $(date) --- Will Show user interface.
 
-    #export display for zenity to use
-#   export DISPLAY=$(who -su | grep $user | awk '$2 ~ /:[0-9.]*/{print $2}')
-#   more robust version
-    export DISPLAY=$(who | grep "^$user" | awk '{print $NF}' | grep -oE ':[0-9]+')
     LOG $(date) --- Running on display number $DISPLAY
     sudo --user=$user \
     zenity --question --title="$title" \
@@ -118,8 +167,11 @@ elif [ $(( $page_count )) -gt 2 ]; then
     LOG $(date) --- User interface has been shown.
     if (($last_command_return==0)); then
         LOG $(date) --- printing even pages
-        lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=even -o collate=true -o outputorder=normal -t "$title"-even "$filename"
-
+		if [ $(( $short_edge )) -eq 1 ]; then
+	        lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=even -o orientation-requested=5 -o collate=true -o outputorder=normal -t "$title"-even "$filename"
+		else
+			lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=even -o collate=true -o outputorder=normal -t "$title"-even "$filename"
+		fi
     else
         LOG $(date) --- User aborted print job
         rm "$filename"
