@@ -8,7 +8,7 @@
 #Uncomment this to log to /var/log/cups/error_log
 LogFile=/var/log/cups/error_log
 LOG() {
-    echo "$@" >> $LogFile
+    echo "$(date) --- $@" >> $LogFile
 }
 # Output "Device Discovery" information on stdout:
 if test "$#" = "0"
@@ -38,8 +38,8 @@ long_edge=0
 
 
 LOG ---
-LOG $(date) --- Starting duplexer job
-LOG $(date) --- Script called by $user and runs as $(whoami) with logname $(logname)
+LOG Starting duplexer job
+LOG Script called by $user and runs as $(whoami) with logname $(logname)
 
 lp_args=
 for opt in $options
@@ -54,7 +54,7 @@ do
 done
 
 page_count=$(pdfinfo "$filename" | grep Pages | awk '{print $2}')
-LOG $(date) --- "page count: $page_count"
+LOG "page count: $page_count"
 
 #   Export display for zenity
 export DISPLAY=$(who | grep "^$user" | awk '{print $NF}' | grep -oE ':[0-9]+')
@@ -106,20 +106,23 @@ if [ $(( $page_count )) -gt 1 ]; then
 	esac
 fi
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 #if only one page, just send the printing command
 if [ $(( $page_count )) -eq 1 ]; then
-	LOG $(date) --- printing ONE page
-	lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o collate=true -t "$title"-even "$filename"
+	LOG printing ONE page
+
+	lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o collate=true  -t "$title"-even "$filename" >> "$LogFile"
 
 #if only 2 pages, print odd pages first and show user interface
 elif [ $(( $page_count )) -eq 2 ]; then
-	LOG $(date) --- 2 pages were sent. printing odd pages
+	LOG 2 pages were sent. printing odd pages
 
 		lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=odd -o collate=true -o outputorder=normal -t "$title"-odd "$filename"
 
 	#show user interface
-	LOG $(date) --- Will Show user interface.
-	LOG $(date) --- Running on display number "$DISPLAY"
+	LOG Will Show user interface.
+	LOG Running on display number "$DISPLAY"
 	sudo --user="$user" zenity --question \
 		--title="$title" \
         --text="<big><b>Flip and reinsert the entire paper stack when printing has finished,\n\n then press Procceed.</b></big>\n\n
@@ -137,27 +140,27 @@ elif [ $(( $page_count )) -eq 2 ]; then
     LOG "$(date) --- User interface has been shown. Zenity returned >> $last_command_return << and button_clicked >> $button_clicked << "
 
 	if (($last_command_return==0)); then
-		LOG $(date) --- printing even pages
+		LOG printing even pages
 		if [ $(( $short_edge )) -eq 1 ]; then
 			lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-ranges=2 -o orientation-requested=5 -o collate=true -o outputorder=normal -t "$title"-even "$filename"
 		else
 			lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-ranges=2 -o collate=true -o outputorder=normal -t "$title"-even "$filename"
 		fi
     else
-        LOG $(date) --- User aborted print job
+        LOG User aborted print job
         rm "$filename"
         exit 0
     fi
 
 #if more than 2 pages, print odd pages first and show user interface
 elif [ $(( $page_count )) -gt 2 ]; then
-    LOG $(date) --- more than 2 pages were sent. printing odd pages
+    LOG more than 2 pages were sent. printing odd pages
     lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=odd -o collate=true -o outputorder=normal -t "$title"-odd "$filename"
 
     #show user interface
-    LOG $(date) --- Will Show user interface.
+    LOG Will Show user interface.
 
-    LOG $(date) --- Running on display number $DISPLAY
+    LOG Running on display number $DISPLAY
     sudo --user="$user" zenity --question \
     	 --title="$title" \
         --text="<big><b>Flip and reinsert the entire paper stack when printing has finished,\n\n then press Procceed.</b></big>\n\n
@@ -175,14 +178,30 @@ elif [ $(( $page_count )) -gt 2 ]; then
     LOG "$(date) --- User interface has been shown. Zenity returned >> $last_command_return << and button_clicked >> $button_clicked << "
 
     if (($last_command_return==0)); then
-        LOG $(date) --- printing even pages
-		if [ $(( $short_edge )) -eq 1 ]; then
-	        lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=even -o orientation-requested=5 -o collate=true -o outputorder=normal -t "$title"-even "$filename"
+        LOG printing even pages
+
+		if (( page_count % 2 != 0 )); then
+			LOG numpages is odd: one blank page will be printed after each copy,  printjobs will be generated for each copy
+			i=0
+			while (( i < $numcopies )); do
+				if [ $(( $short_edge )) -eq 1 ]; then
+					lp -s -d $USE_PRINTER $lp_args -o page-set=even -o orientation-requested=5 -o collate=true -o outputorder=normal -t "$title"-even "$filename"
+        		else
+        			lp -s -d $USE_PRINTER $lp_args -o page-set=even -o collate=true -o outputorder=normal -t "$title"-even "$filename"
+    	    	fi
+				lp -d $USE_PRINTER $SCRIPT_DIR/blank.pdf
+	  			(( i++ ))
+			done
 		else
-			lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=even -o collate=true -o outputorder=normal -t "$title"-even "$filename"
+			LOG numpages is even: just one printjob for all copies
+			if [ $(( $short_edge )) -eq 1 ]; then
+         		lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=even -o orientation-requested=5 -o collate=true -o outputorder=normal -t "$title"-even "$filename"
+			else
+				lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=even -o collate=true -o outputorder=normal -t "$title"-even "$filename"
+			fi
 		fi
     else
-        LOG $(date) --- User aborted print job
+        LOG User aborted print job
         rm "$filename"
         exit 0
     fi

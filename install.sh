@@ -87,6 +87,14 @@ function setup_duplexer {
   chown root:root $CUPS_LIB_DIR/backend-available/duplex-print
   chmod 700 $CUPS_LIB_DIR/backend-available/duplex-print
 
+  cp -rf usr/lib/cups/backend/blank.pdf $CUPS_LIB_DIR/backend/blank.pdf
+  chown root:root $CUPS_LIB_DIR/backend/blank.pdf
+  chmod 700 $CUPS_LIB_DIR/backend/blank.pdf
+  [ ! -d $CUPS_LIB_DIR/backend-available ] && mkdir $CUPS_LIB_DIR/backend-available
+  cp -rf usr/lib/cups/backend/blank.pdf $CUPS_LIB_DIR/backend-available/blank.pdf
+  chown root:root $CUPS_LIB_DIR/backend-available/blank.pdf
+  chmod 700 $CUPS_LIB_DIR/backend-available/blank.pdf
+
   echo "Deleting printer if already exists"
   lpadmin -x Manual_Duplexer_$first_printer
 
