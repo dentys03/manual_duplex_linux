@@ -21,6 +21,23 @@ fi
 # add option to install for all users at once
 # all_users=$(awk -F: '($3>=1000)&&($1!="nobody"){print $1}' /etc/passwd)
 
+check_dependencies() {
+    local missing=0
+    for cmd in pdfinfo zenity lp seq paste awk grep; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            LOG "Error: Required command '$cmd' not found."
+            missing=1
+        fi
+    done
+    if (( missing )); then
+        echo "Missing required dependencies. See $LogFile for details." >&2
+        exit 1
+    fi
+	echo "Finished dependency check."
+}
+
+check_dependencies
+
 all_printers=$(lpstat -s | tail -n +2 | awk '{print $3}' | sed 's/:$//')
 
 echo "These are your installed printers:"

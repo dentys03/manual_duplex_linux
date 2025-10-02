@@ -5,6 +5,32 @@
 #
 # -o page-set=even makes the printer spit one blank before printing
 # looks like it has something to do with the duplex printing instructions
+
+# Return even page numbers from 1..num_pages
+even_pages() {
+    num_pages=$1
+    i=2
+    out=
+    while [ "$i" -le "$num_pages" ]; do
+        out="${out}${i},"
+        i=$((i+2))
+    done
+    printf '%s\n' "${out%,}"
+}
+
+get_running_user() {
+    if [[ -n "$user" ]]; then
+        echo "$user"
+        return
+    fi
+    login=$(logname 2>/dev/null)
+    if [[ -n "$login" ]]; then
+        echo "$login"
+        return
+    fi
+    echo "$(whoami)"
+}
+
 #Uncomment this to log to /var/log/cups/error_log
 LogFile=/var/log/cups/error_log
 LOG() {
@@ -38,7 +64,7 @@ long_edge=0
 
 LOG ---
 LOG Starting duplexer job
-LOG Script called by $user and runs as $(whoami) with logname $(logname)
+LOG "Script called by $user and runs as $(whoami) with logname $(logname)"
 
 lp_args=
 for opt in $options
@@ -60,7 +86,6 @@ export DISPLAY=$(who | grep "^$user" | awk '{print $NF}' | grep -oE ':[0-9]+')
 # Calculate width (Assuming you want one-third of the screen width)
 screen_width=$(sudo -u "$user" xdpyinfo -display "$DISPLAY" | awk '/dimensions:/ {print $2}' | cut -d'x' -f1)
 zenity_width=$(( screen_width / 3 ))
-
 
 if [ $(( $page_count )) -gt 1 ]; then
 	#show user interface
@@ -115,9 +140,10 @@ if [ $(( $page_count )) -eq 1 ]; then
 
 #if only 2 pages, print odd pages first and show user interface
 elif [ $(( $page_count )) -eq 2 ]; then
-	LOG 2 pages were sent. printing odd pages
+	LOG 2 pages were sent
+	LOG Printing odd pages.
 
-		lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=odd -o collate=true -o outputorder=normal -t "$title"-odd "$filename"
+	lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=odd -o collate=true -o outputorder=normal -t "$title"-odd "$filename"
 
 	#show user interface
 	LOG Will Show user interface.
@@ -153,7 +179,9 @@ elif [ $(( $page_count )) -eq 2 ]; then
 
 #if more than 2 pages, print odd pages first and show user interface
 elif [ $(( $page_count )) -gt 2 ]; then
-    LOG more than 2 pages were sent. printing odd pages
+    LOG More than 2 pages were sent
+    LOG Printing odd pages. it is important for these to be printed first. Do not change this.
+
     lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=odd -o collate=true -o outputorder=normal -t "$title"-odd "$filename"
 
     #show user interface
@@ -180,29 +208,37 @@ elif [ $(( $page_count )) -gt 2 ]; then
         LOG printing even pages
 
 		if (( page_count % 2 != 0 )); then
-			LOG numpages is odd: one blank page will be printed after each copy,  printjobs will be generated for each copy
+			LOG numpages is odd: one blank page will be printed after each copy.
+		# Multiple print jobs, otherwise external app is needed as pdftk
 			i=0
 			while (( i < $numcopies )); do
 				if [ $(( $short_edge )) -eq 1 ]; then
-					lp -s -d $USE_PRINTER $lp_args -o sides=one-sided -o page-set=even -o orientation-requested=5 -o collate=true -o outputorder=normal -t "$title"-even "$filename"
+					lp -s -d $USE_PRINTER $lp_args \
+						-o page-ranges="$(even_pages "$page_count")" \
+						-o sides=one-sided -o orientation-requested=5 -o collate=true -o outputorder=normal -t "$title"-even \
+						"$filename"
         		else
-        			lp -s -d $USE_PRINTER $lp_args -o sides=one-sided -o page-set=even -o collate=true -o outputorder=normal -t "$title"-even "$filename"
+        			lp -s -d $USE_PRINTER $lp_args \
+        				-o page-ranges="$(even_pages "$page_count")" \
+        				-o sides=one-sided -o collate=true -o outputorder=normal -t "$title"-even \
+        				"$filename"
     	    	fi
-# CUPS 2.3.3op2-3+deb11u10
-# 7 pagini imprimate din word, in 2 copii, asta scotea 1 pagina in plus dupa ce imprima paginile pare.
-# 7 pagini din word, intr-o singura copie, tot scotea 1 pagina in plus dupa ce imprima paginile pare.
-#				lp -d $USE_PRINTER $SCRIPT_DIR/blank.pdf
-# Dupa inactivare a imprimat corect 7 pagini din word si din pdf
-#
-
+				lp -d $USE_PRINTER $SCRIPT_DIR/blank.pdf
 	  			(( i++ ))
 			done
 		else
 			LOG numpages is even: just one printjob for all copies
+			# Send to printer
 			if [ $(( $short_edge )) -eq 1 ]; then
-         		lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o sides=one-sided -o page-set=even -o orientation-requested=5 -o collate=true -o outputorder=normal -t "$title"-even "$filename"
+         		lp -s -d $USE_PRINTER -n "$numcopies" $lp_args \
+         			-o page-set=even \
+         			-o sides=one-sided -o orientation-requested=5 -o collate=true -o outputorder=normal -t "$title"-even \
+					"$filename"
 			else
-				lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o sides=one-sided -o page-set=even -o collate=true -o outputorder=normal -t "$title"-even "$filename"
+				lp -s -d $USE_PRINTER -n "$numcopies" $lp_args \
+					-o page-set=even \
+					-o sides=one-sided -o collate=true -o outputorder=normal -t "$title"-even \
+					"$filename"
 			fi
 		fi
     else
@@ -210,9 +246,7 @@ elif [ $(( $page_count )) -gt 2 ]; then
         rm "$filename"
         exit 0
     fi
-
-
 fi
-
-rm "$filename"
+# Cleanup
+trap 'rm -f "$filename"'
 exit 0
