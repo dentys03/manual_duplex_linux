@@ -36,7 +36,6 @@ filename="/var/spool/cups/duplex/$job.duplex"
 short_edge=0
 long_edge=0
 
-
 LOG ---
 LOG Starting duplexer job
 LOG Script called by $user and runs as $(whoami) with logname $(logname)
@@ -110,7 +109,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 #if only one page, just send the printing command
 if [ $(( $page_count )) -eq 1 ]; then
-	LOG printing ONE page
+	LOG "printing ONE page"
 
 	lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o collate=true  -t "$title"-even "$filename" >> "$LogFile"
 
@@ -185,19 +184,25 @@ elif [ $(( $page_count )) -gt 2 ]; then
 			i=0
 			while (( i < $numcopies )); do
 				if [ $(( $short_edge )) -eq 1 ]; then
-					lp -s -d $USE_PRINTER $lp_args -o page-set=even -o orientation-requested=5 -o collate=true -o outputorder=normal -t "$title"-even "$filename"
+					lp -s -d $USE_PRINTER $lp_args -o sides=one-sided -o page-set=even -o orientation-requested=5 -o collate=true -o outputorder=normal -t "$title"-even "$filename"
         		else
-        			lp -s -d $USE_PRINTER $lp_args -o page-set=even -o collate=true -o outputorder=normal -t "$title"-even "$filename"
+        			lp -s -d $USE_PRINTER $lp_args -o sides=one-sided -o page-set=even -o collate=true -o outputorder=normal -t "$title"-even "$filename"
     	    	fi
-				lp -d $USE_PRINTER $SCRIPT_DIR/blank.pdf
+# CUPS 2.3.3op2-3+deb11u10
+# 7 pagini imprimate din word, in 2 copii, asta scotea 1 pagina in plus dupa ce imprima paginile pare.
+# 7 pagini din word, intr-o singura copie, tot scotea 1 pagina in plus dupa ce imprima paginile pare.
+#				lp -d $USE_PRINTER $SCRIPT_DIR/blank.pdf
+# Dupa inactivare a imprimat corect 7 pagini din word si din pdf
+#
+
 	  			(( i++ ))
 			done
 		else
 			LOG numpages is even: just one printjob for all copies
 			if [ $(( $short_edge )) -eq 1 ]; then
-         		lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=even -o orientation-requested=5 -o collate=true -o outputorder=normal -t "$title"-even "$filename"
+         		lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o sides=one-sided -o page-set=even -o orientation-requested=5 -o collate=true -o outputorder=normal -t "$title"-even "$filename"
 			else
-				lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o page-set=even -o collate=true -o outputorder=normal -t "$title"-even "$filename"
+				lp -s -d $USE_PRINTER -n "$numcopies" $lp_args -o sides=one-sided -o page-set=even -o collate=true -o outputorder=normal -t "$title"-even "$filename"
 			fi
 		fi
     else
