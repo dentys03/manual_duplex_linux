@@ -28,7 +28,7 @@ It should work on any printer and any linux with cups:
 - Confirmed to work on Gentoo.
 
 
-
 ## NOTE
-If your cups-filters are older than 1.0.55, you might need to print an extra blank page in usr/lib/cups/backend/duplex-print
-when printing odd pages.
+This shouldn't be an issue anymore:
+If your cups-filters are older than 1.0.55, you might need to print an extra blank page
+ in usr/lib/cups/backend/duplex-print when printing odd pages.
